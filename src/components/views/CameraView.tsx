@@ -12,6 +12,30 @@ export function CameraView() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const paused = useDashboard((s) => s.paused)
 
+  // Kick off playback, and recover if the browser blocked autoplay (common in
+  // macOS Low Power Mode / battery-saver, where even muted autoplay is denied).
+  // Retrying on `canplay` and on the first user gesture makes the feed reliable.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const tryPlay = () => {
+      if (!useDashboard.getState().paused) void video.play().catch(() => {})
+    }
+
+    tryPlay()
+    video.addEventListener('canplay', tryPlay)
+    window.addEventListener('pointerdown', tryPlay)
+    window.addEventListener('keydown', tryPlay)
+
+    return () => {
+      video.removeEventListener('canplay', tryPlay)
+      window.removeEventListener('pointerdown', tryPlay)
+      window.removeEventListener('keydown', tryPlay)
+    }
+  }, [])
+
+  // Mirror the global pause state.
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
