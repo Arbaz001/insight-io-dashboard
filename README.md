@@ -14,11 +14,9 @@ internet dependency.
 | | |
 |---|---|
 | **Full Name** | Arbaz Ali |
-| **Contact Number** | `+91-XXXXXXXXXX` <!-- TODO: replace with your number before submitting --> |
+| **Contact Number** | +91 6287338719 |
 | **Email ID** | arbazalisgl@gmail.com |
 | **GitHub Username** | Arbaz001 |
-
-> ⚠️ **Before submitting:** replace the placeholder contact number above.
 
 ---
 
