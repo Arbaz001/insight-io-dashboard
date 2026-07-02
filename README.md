@@ -48,12 +48,16 @@ internet dependency.
 
 ## 🖼️ Preview
 
-The reference design this implements:
+The running app — 3D point-cloud map, robot avatar, live telemetry and teleop:
+
+![Insight.IO dashboard — running app](docs/screenshot.png)
+
+<details>
+<summary>The reference design this implements</summary>
 
 ![Insight.IO reference demo](docs/reference-demo.gif)
 
-> _Add your own screenshot / screen recording of the running app to `docs/` and
-> link it here before submitting (the assignment asks for a sample image/video)._
+</details>
 
 ---
 
