@@ -4,47 +4,62 @@ import { useDashboard } from '../../lib/store'
 const VIDEO_URL = `${import.meta.env.BASE_URL}data/camera-feed.mp4`
 
 /**
- * The camera feed: a looping local MP4 dressed with a lightweight HUD so it
- * reads as a live robot front-camera. Playback follows the global pause state.
- * Swapping to a live MJPEG/WebRTC stream would only mean changing the `src`.
+ * The camera feed — a looping local MP4 dressed with a HUD so it reads as the
+ * robot's onboard front camera.
+ *
+ * Playback is coupled to robot motion, the way a body-mounted camera behaves:
+ * the feed only advances while the robot is actually moving. In MANUAL that
+ * means "while you're driving (WASD / joystick)"; in AUTO the robot is on a
+ * mission so the feed streams continuously. Pausing or e-stopping freezes it.
+ * (With a real robot this `src` would be its live MJPEG/WebRTC stream.)
  */
 export function CameraView() {
   const videoRef = useRef<HTMLVideoElement>(null)
+
+  const mode = useDashboard((s) => s.mode)
   const paused = useDashboard((s) => s.paused)
+  const estop = useDashboard((s) => s.estop)
+  const keys = useDashboard((s) => s.keys)
 
-  // Kick off playback, and recover if the browser blocked autoplay (common in
-  // macOS Low Power Mode / battery-saver, where even muted autoplay is denied).
-  // Retrying on `canplay` and on the first user gesture makes the feed reliable.
+  const driving = keys.forward || keys.back || keys.left || keys.right
+  const live = !paused && !estop && (mode === 'AUTO' || driving)
+
+  // Play only while the feed should be "live"; freeze otherwise.
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-
-    const tryPlay = () => {
-      if (!useDashboard.getState().paused) void video.play().catch(() => {})
-    }
-
-    tryPlay()
-    video.addEventListener('canplay', tryPlay)
-    window.addEventListener('pointerdown', tryPlay)
-    window.addEventListener('keydown', tryPlay)
-
-    return () => {
-      video.removeEventListener('canplay', tryPlay)
-      window.removeEventListener('pointerdown', tryPlay)
-      window.removeEventListener('keydown', tryPlay)
-    }
-  }, [])
-
-  // Mirror the global pause state.
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    if (paused) {
-      video.pause()
-    } else {
+    if (live) {
       void video.play().catch(() => {})
+    } else {
+      video.pause()
     }
-  }, [paused])
+  }, [live])
+
+  // Recover if the browser blocked autoplay (e.g. macOS Low Power Mode denies
+  // even muted autoplay): retry on `canplay` and on the first user gesture.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const retry = () => {
+      if (live) void video.play().catch(() => {})
+    }
+    video.addEventListener('canplay', retry)
+    window.addEventListener('pointerdown', retry)
+    window.addEventListener('keydown', retry)
+    return () => {
+      video.removeEventListener('canplay', retry)
+      window.removeEventListener('pointerdown', retry)
+      window.removeEventListener('keydown', retry)
+    }
+  }, [live])
+
+  const statusLabel = paused
+    ? 'PAUSED'
+    : estop
+      ? 'STOPPED'
+      : live
+        ? 'REC'
+        : 'STANDBY'
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
@@ -52,7 +67,6 @@ export function CameraView() {
         ref={videoRef}
         src={VIDEO_URL}
         className="h-full w-full object-cover"
-        autoPlay
         muted
         loop
         playsInline
@@ -65,9 +79,11 @@ export function CameraView() {
         </div>
         <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded bg-black/40 px-2 py-1 text-[10px] font-semibold tracking-wider text-white/90 backdrop-blur">
           <span
-            className={`h-2 w-2 rounded-full bg-estop-red ${paused ? '' : 'animate-pulse'}`}
+            className={`h-2 w-2 rounded-full ${
+              live ? 'animate-pulse bg-estop-red' : 'bg-white/50'
+            }`}
           />
-          {paused ? 'PAUSED' : 'REC'}
+          {statusLabel}
         </div>
         {/* Centre reticle */}
         <div className="absolute top-1/2 left-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2">
