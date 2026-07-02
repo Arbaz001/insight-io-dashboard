@@ -8,10 +8,15 @@ import { RobotMarker } from './RobotMarker'
 
 const MAP_URL = `${import.meta.env.BASE_URL}data/warehouse_map.pcd`
 
+const isDriving = (s: ReturnType<typeof useDashboard.getState>) =>
+  s.canDrive() &&
+  (s.keys.forward || s.keys.back || s.keys.left || s.keys.right)
+
 /** Maps the 0–100 zoom slider onto an orbit-camera distance. */
 function ZoomRig() {
   const zoom = useDashboard((s) => s.zoom)
   const camera = useThree((s) => s.camera)
+  const invalidate = useThree((s) => s.invalidate)
   const controls = useThree((s) => s.controls) as unknown as
     | { target: THREE.Vector3; update: () => void }
     | null
@@ -24,7 +29,45 @@ function ZoomRig() {
     const distance = THREE.MathUtils.lerp(72, 15, zoom / 100)
     camera.position.copy(target).addScaledVector(dir, distance)
     controls?.update()
-  }, [zoom, camera, controls])
+    invalidate() // demand-mode render loop needs a nudge to redraw
+  }, [zoom, camera, controls, invalidate])
+
+  return null
+}
+
+/**
+ * Keeps the on-demand render loop ticking only while the robot is actually
+ * being driven. When idle (or just orbiting), the GPU sits at ~0% instead of
+ * re-rendering 60fps forever — the main fix for the laptop running hot.
+ */
+function DriveLoop() {
+  const invalidate = useThree((s) => s.invalidate)
+
+  useEffect(() => {
+    let raf = 0
+    let running = false
+
+    const tick = () => {
+      if (isDriving(useDashboard.getState())) {
+        invalidate()
+        raf = requestAnimationFrame(tick)
+      } else {
+        running = false
+      }
+    }
+
+    const unsub = useDashboard.subscribe((state) => {
+      if (isDriving(state) && !running) {
+        running = true
+        raf = requestAnimationFrame(tick)
+      }
+    })
+
+    return () => {
+      cancelAnimationFrame(raf)
+      unsub()
+    }
+  }, [invalidate])
 
   return null
 }
@@ -48,9 +91,10 @@ function Loader() {
 export function MapView() {
   return (
     <Canvas
+      frameloop="demand"
       camera={{ position: [0, 34, 26], fov: 42, near: 0.1, far: 500 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true }}
+      dpr={[1, 1.5]}
+      gl={{ antialias: true, powerPreference: 'low-power' }}
     >
       <color attach="background" args={['#eceae5']} />
       <fog attach="fog" args={['#eceae5', 60, 130]} />
@@ -89,6 +133,7 @@ export function MapView() {
         maxDistance={90}
       />
       <ZoomRig />
+      <DriveLoop />
     </Canvas>
   )
 }
