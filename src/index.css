@@ -1,0 +1,82 @@
+@import 'tailwindcss';
+
+/*
+ * Insight.IO design tokens.
+ * Colours sampled from the reference demo: a light warm-grey canvas, deep navy
+ * chrome, bright status green and the red/yellow emergency-stop palette.
+ */
+@theme {
+  --color-ink-900: #0b1119;
+  --color-ink-800: #131d29;
+  --color-ink-700: #1c2734;
+  --color-ink-600: #24303f;
+  --color-ink-500: #33404f;
+
+  --color-canvas: #e7e6e2;
+  --color-canvas-hi: #f1f0ed;
+
+  --color-status: #34d17f;
+  --color-signal: #34d17f;
+  --color-accent: #38bdf8;
+
+  --color-estop-red: #e01f27;
+  --color-estop-yellow: #f4c421;
+
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+
+  --shadow-pill: 0 8px 24px -8px rgb(15 23 42 / 0.25);
+  --shadow-float: 0 18px 40px -12px rgb(15 23 42 / 0.35);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-canvas);
+  color: var(--color-ink-800);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Vertical range input used by the zoom slider */
+.zoom-range {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 6px;
+  height: 120px;
+  accent-color: var(--color-ink-700);
+  cursor: pointer;
+}
+
+@keyframes estop-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(224 31 39 / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(224 31 39 / 0);
+  }
+}
+.animate-estop {
+  animation: estop-pulse 1.2s ease-out infinite;
+}
+
+@keyframes alarm-border {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.animate-alarm {
+  animation: alarm-border 1s ease-in-out infinite;
+}
