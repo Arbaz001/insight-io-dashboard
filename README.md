@@ -117,7 +117,7 @@ The `dist/` folder is a static bundle — you can host it with any static server
 ## 🗂️ Project structure
 
 ```
-insight-io-dashboard/
+eric-robotics-dashboard/
 ├── public/
 │   └── data/
 │       ├── warehouse_map.pcd   # point cloud for the 3D map
